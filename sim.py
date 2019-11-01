@@ -25,10 +25,10 @@ class body:
 	def angle(self, body): #angle between this and other body in radians
 		x_dist = self.x-body.x; #one side of right angle triangle
 		y_dist = self.y-body.y; #second side of same triangle
-		if(x_dist<1e-5):
-			angle=3.14/2*np.sign(y_dist)
+		if(y_dist<1e-5):
+			angle=3.14/2*np.sign(x_dist)
 		else:
-			angle = np.arctan(y_dist/x_dist); #division of sides gives tan(angle)
+			angle = np.arctan(x_dist/y_dist); #division of sides gives tan(angle)
 		return angle;
     
 	def dist(self,body):
@@ -53,16 +53,29 @@ class body:
 		self.v[1]=self.v[1]+self.a[1]*dt #y
 		return self.a; 
     
-	def collision(self,body): #detect collision
+	def energy(self,body):
 		for i in range(len(body)):
 			distance = self.dist(body[i])
-			if(distance<self.r+body[i].r and distance>0): #we are working with circles with radius so we dont get division by zero when bodies collide
-				print(self.angle(body[i]))
-				self.v[0]=self.m/body[i].m*body[i].v[0]
-				self.v[1]=self.m/body[i].m*body[i].v[1]
-				self.v[0]=self.v[0]*np.sin(self.angle(body[i]))
-				self.v[1]=self.v[1]*np.cos(self.angle(body[i]))
+			if(distance!=0):
+				ep=-1/(4*3.14*e0)*self.q*body[i].q/distance-gravity_constant*self.m*body[i].m/distance
+		ek=0.5*self.m*(self.v[0]**2+self.v[1]**2)
+		return ek,ep
 
+	def collision(self,body): #detect collision
+		for i in range(len(body)):
+			distance = self.dist(body[i]) 	
+			if(distance<=(self.r/2+body[i].r/2) and distance>0): #we are working with circles with radius so we dont get division by zero when bodies collide
+				#print(distance)
+				v1=(self.m-body[i].m)/(self.m+body[i].m)*math.sqrt(self.v[0]**2+self.v[1]**2)+2*body[i].m/(self.m+body[i].m)*math.sqrt(body[i].v[0]**2+body[i].v[1]**2)
+				v2=-(self.m-body[i].m)/(self.m+body[i].m)*math.sqrt(body[i].v[0]**2+body[i].v[1]**2)+2*self.m/(self.m+body[i].m)*math.sqrt(self.v[0]**2+self.v[1]**2)
+				self.v[0]=v1*np.sin(self.angle(body[i]))
+				self.v[1]=v1*np.cos(self.angle(body[i]))
+				body[i].v[0]=v2*np.sin(body[i].angle(self))
+				body[i].v[1]=v2*np.cos(body[i].angle(self))
+				while(self.dist(body[i])<=(self.r/2+body[i].r/2)):
+					self.move()
+					body[i].move()
+					print(distance)
 	def move(self):
 		self.x=self.x+self.v[0]*dt #move for time step x
 		self.y=self.y+self.v[1]*dt #move for time step y
@@ -90,15 +103,14 @@ def simulation(bodies, time):
 		xcor3[k] = bodies[2].x
 		ycor3[k] = bodies[2].y
 	return xcor1, ycor1, xcor2, ycor2, xcor3,ycor3
-nis = [body(100,100, 1,0,1,-5,5),body(0,0,1,0,1,0,0),body(0,100,1,0,1,5,0) ]
-x1,y1,x2,y2,x3,y3= simulation(nis,2000)
+nis = [body(10,100, 1,0,1,-1,0),body(0,0,1,0,1,0,0),body(0,100,1,0,1,1,0) ]
+x1,y1,x2,y2,x3,y3= simulation(nis,1000)
 
-def update(frame):
-	
+def update(frame):	
 	ax1.clear()
-	ax1.scatter(x1[frame],y1[frame], c='r')
-	ax1.scatter(x2[frame],y2[frame], c='g')
-	ax1.scatter(x3[frame],y3[frame], c='b')
-animation = FuncAnimation(fig, update, interval=1)
+	ax1.plot(x1[frame],y1[frame], c='r',marker='o',markersize=10)
+	ax1.plot(x2[frame],y2[frame], c='g',marker='o',markersize=10)
+	ax1.plot(x3[frame],y3[frame], c='b',marker='o',markersize=10)
+animation = FuncAnimation(fig, update, interval=50)
 plt.show()
 
