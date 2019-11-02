@@ -77,7 +77,7 @@ class body:
 				self.v[1]=v1*np.sin(self.angle(body[i]))
 				body[i].v[0]=v2*np.cos(body[i].angle(self))
 				body[i].v[1]=v2*np.sin(body[i].angle(self))
-				while(self.dist(body[i])<=(self.r/2+body[i].r/2)):
+				while(self.dist(body[i])<=(self.r/2+body[i].r/2)): #prevent another body to detect collision
 					self.move()
 					body[i].move()
 				print(distance)
@@ -117,17 +117,21 @@ def simulation(bodies, t):
 	return simulation_matrix
 
 test = [body(0,10.001, 20,1e-4,5,0,-10),body(0,0,1,1e-5,5,0,0),body(50,100,1,-1e-2,5,-10,-20) ]
-print("Starting simulation with %.0f bodies for time period of %.2f seconds" %(len(nis),T))
+print("Starting simulation with %.0f bodies for time period of %.2f seconds" %(len(test),T))
 
-simulation_data = simulation(nis,T) #simulation start
-colors = cm.rainbow(np.linspace(0, 1, len(nis))) #create colors list 
+simulation_data = simulation(test,T) #simulation start
+colors = cm.rainbow(np.linspace(0, 1, len(test))) #create colors list 
 
 def update(frame):	#animation frames update
 	frame=frame*animation_speed #less frames -> faster animation
 	ax1.clear() #clear all dots and plot them again, imitating movment
-	for i in range(len(nis)):
+	ax2.set_xlabel('T [s]')
+	ax2.set_ylabel('V [pixel/s]')
+	ax1.set_xlabel('x [pixel]')
+	ax1.set_ylabel('y [pixel]')
+	for i in range(len(test)):
 		ax1.plot(simulation_data[frame][i][0],simulation_data[frame][i][1],c=colors[i],marker='o',markersize=5)
-	for i in range(len(nis)):
+	for i in range(len(test)):
 		ax2.plot(frame*dt,math.sqrt(simulation_data[frame][i][2]**2+simulation_data[frame][i][3]**2), c=colors[i],marker='o', markersize=5)
 
 
