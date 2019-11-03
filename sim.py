@@ -6,10 +6,10 @@ import math, time, matplotlib, random
 
 matplotlib.use('Qt5Agg')
 #Some important variables
-dt = 1e-2#second
+dt = 1e-3#second
 #assume that all distance units are in meters
 T=15#time of simulation in seconds
-animation_speed=3 #how much times faster should animation be
+animation_speed=20 #how much times faster should animation be
 e0 = 8.85e-12; #epsilon 0 
 gravity_constant = 6.67e-11; #gravity constant
 
@@ -94,6 +94,16 @@ class body:
 		ek=0.5*self.m*(self.v[0]**2+self.v[1]**2)
 		return ek,ep
 
+	def box_collision(self,box): #collision with box walls
+		if(self.x>=box.right):
+			self.v[0]=self.v[0]*(-1)
+		if(self.x<=box.left):
+			self.v[0]=self.v[0]*(-1)
+		if(self.y>=box.up):
+			self.v[1]=self.v[1]*(-1)
+		if(self.y<=box.down):
+			self.v[1]=self.v[1]*(-1)
+
 	def collision(self,body): #detect collision
 		for i in range(len(body)):
 			distance = self.dist(body[i]) 	
@@ -136,9 +146,15 @@ class body:
 		self.y=self.y+self.v[1]*dt #move for time step y
 		return [self.x, self.y] #return position for debugging
 
+class box():
+	def __init__(self, left,right,up,down):
+		self.left = left
+		self.right = right
+		self.up = up
+		self.down = down
 
 
-def simulation(bodies, t):
+def simulation(bodies, t, box):
 	start = time.time()
 	N=int(t/dt)
 	print("%.0f iterations" % N)
@@ -146,13 +162,14 @@ def simulation(bodies, t):
 	for k in range(N):
 		for i in range(len(bodies)):
 			bodies[i].force(bodies) #calculate force on each body
+			bodies[i].box_collision(box)
 			bodies[i].acceleration() #calculate new velocity for each body
 			bodies[i].collision(bodies) #check for collisions
 			bodies[i].move() #move all bodies for time step
 			#add positions and velocities into one matrix 
 			simulation_matrix[k][i][0], simulation_matrix[k][i][1] = bodies[i].x, bodies[i].y
 			simulation_matrix[k][i][2], simulation_matrix[k][i][3] = bodies[i].v[0], bodies[i].v[1]
-			simulation_matrix[k][i][4] = bodies[i].r
+			simulation_matrix[k][i][4] = np.sign(bodies[i].q)
 		
 		#proogress info
 		if(k==int(N/4)):  
@@ -169,19 +186,23 @@ def simulation(bodies, t):
 	print("100%s done, time taken to simulate: %.3f seconds" % ("%",end-start))
 	return simulation_matrix #get back the data
 
+#create box:
+box = box(-100,100,100,-100)
+
 #generate random coordinates
-'''
+
 test = []
-number_of_bodies = 20
-xcor, ycor = random.sample(range(100), number_of_bodies), random.sample(range(100), number_of_bodies)
-mass, charge = random.sample(range(500),number_of_bodies), random.sample(range(-50,50), number_of_bodies)
+number_of_bodies = 6
+xcor, ycor = random.sample(range(box.left-5,box.right-5), number_of_bodies), random.sample(range(box.down-5,box.up-5), number_of_bodies)
+mass, charge = random.sample(range(100),number_of_bodies), random.sample(range(-100,100), number_of_bodies)
 for i in range(number_of_bodies):
-	test.append(body(xcor[i],ycor[i],mass[i],charge[i]*1e-1,1,0,0))
-'''
-test = [body(-10,10,1,1e-2,1,5,-5),body(10,-10,1,1e-2,1,-5,5)]
+	test.append(body(xcor[i],ycor[i],mass[i],charge[i]*1e-4,1,0,0))
+
+#test = [body(-10,10,1,1e-2,1,5,-5),body(10,-10,1,1e-2,1,-5,5)]
+
 #simulation start
 print("Starting simulation with %.0f bodies for time period of %.2f seconds" %(len(test),T))
-simulation_data = simulation(test,T) 
+simulation_data = simulation(test,T, box) 
 
 
 #Create animation
@@ -190,17 +211,23 @@ colors = cm.rainbow(np.linspace(0, 1, len(test))) #create colors list
 def update(frame):	#animation frames update
 	frame=frame*animation_speed #less frames -> faster animation
 	ax1.clear() #clear all dots and plot them again, imitating movment
+	ax1.set_xlim(box.left,box.right)
+	ax1.set_ylim(box.down,box.up)
 	ax2.set_xlabel('T [s]')
 	ax2.set_ylabel('V [pixel/s]')
 	ax1.set_xlabel('x [pixel]')
 	ax1.set_ylabel('y [pixel]')
 	for i in range(len(test)):
 		ax1.plot(simulation_data[frame][i][0],simulation_data[frame][i][1],c=colors[i],marker='o',markersize=5)
+		if(simulation_data[frame][i][4]==-1):
+			ax1.annotate('-',(simulation_data[frame][i][0],simulation_data[frame][i][1]))
+		elif(simulation_data[frame][i][4]==+1):
+			ax1.annotate('+',(simulation_data[frame][i][0],simulation_data[frame][i][1]))
 	for i in range(len(test)):
 		ax2.plot(frame*dt,math.sqrt(simulation_data[frame][i][2]**2+simulation_data[frame][i][3]**2), c=colors[i],marker='*', markersize=2)
 
 
 
-animation = FuncAnimation(fig, update, interval=44, frames=int(len(simulation_data)/animation_speed), repeat=False)
+animation = FuncAnimation(fig, update, interval=1, frames=int(len(simulation_data)/animation_speed), repeat=False)
 plt.show()
 
