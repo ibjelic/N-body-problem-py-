@@ -8,8 +8,8 @@ matplotlib.use('Qt5Agg')
 #Some important variables
 dt = 1e-3#second
 #assume that all distance units are in meters
-T=15#time of simulation in seconds
-animation_speed=20 #how much times faster should animation be
+T=1#time of simulation in seconds
+animation_speed=1 #how much times faster should animation be
 e0 = 8.85e-12; #epsilon 0 
 gravity_constant = 6.67e-11; #gravity constant
 
@@ -78,12 +78,20 @@ class body:
 				self.f[1]=self.f[1]+1/(4*3.14*e0)*self.q*body[i].q/distance**2*np.sin(self.angle(body[i]))#*(self.y-body[i].y)/np.abs(self.y-body[i].y) #electric force y
 
 		return self.f
-	
+
+	def rk4(self,f,dx): #dy/dx=f()
+		k1=dx*f
+		k2=dx*(k1*0.5+f)
+		k3=dx*(k2*0.5+f)
+		k4=dx*(k3+f)
+		return (k1+2*k2+2*k3+k4)/6
+
 	def acceleration(self):
 		self.a[0]=self.f[0]/self.m; #x acceleration from F=m*a
 		self.a[1]=self.f[1]/self.m; #y 
-		self.v[0]=self.v[0]+self.a[0]*dt #x calculate new velocity
-		self.v[1]=self.v[1]+self.a[1]*dt #y
+
+		self.v[0]=self.v[0]+self.rk4(self.a[0],dt) #x calculate new velocity
+		self.v[1]=self.v[1]+self.rk4(self.a[1],dt) #y
 		return self.a; 
     
 	def energy(self,body):
@@ -142,8 +150,8 @@ class body:
 
 
 	def move(self):
-		self.x=self.x+self.v[0]*dt #move for time step x
-		self.y=self.y+self.v[1]*dt #move for time step y
+		self.x=self.x+self.rk4(self.v[0],dt) #move for time step x
+		self.y=self.y+self.rk4(self.v[1],dt) #move for time step y
 		return [self.x, self.y] #return position for debugging
 
 class box():
@@ -174,13 +182,13 @@ def simulation(bodies, t, box):
 		#proogress info
 		if(k==int(N/4)):  
 			end_ = time.time()
-			print("25%s done, ETA = %.3f s, Time in simulation: %.3f" %("%",(end_-start)*3,k*dt)) 
+			print("25%s done, ETA = %.3f seconds" %("%",(end_-start)*3)) 
 		if(k==int(N/2)): 
 			end_ = time.time()
-			print("50%s done, ETA = %.3f s, Time in simulation: %.3f" %("%",(end_-start),k*dt))
+			print("50%s done, ETA = %.3f seconds" %("%",(end_-start)))
 		if(k==int(N*3/4)):
 			end_ = time.time()
-			print("75%s done, ETA = %.3f s, Time in simulation: %.3f" %("%",(end_-start)/4,k*dt))
+			print("75%s done, ETA = %.3f seconds" %("%",(end_-start)/4))
 		
 	end = time.time()
 	print("100%s done, time taken to simulate: %.3f seconds" % ("%",end-start))
@@ -190,10 +198,11 @@ def simulation(bodies, t, box):
 box = box(-100,100,100,-100)
 
 #generate random coordinates
-
 test = []
-number_of_bodies = 6
-xcor, ycor = random.sample(range(box.left-5,box.right-5), number_of_bodies), random.sample(range(box.down-5,box.up-5), number_of_bodies)
+
+number_of_bodies = 20
+
+xcor, ycor = random.sample(range(box.left+5,box.right-5), number_of_bodies), random.sample(range(box.down+5,box.up-5), number_of_bodies)
 mass, charge = random.sample(range(100),number_of_bodies), random.sample(range(-100,100), number_of_bodies)
 for i in range(number_of_bodies):
 	test.append(body(xcor[i],ycor[i],mass[i],charge[i]*1e-4,1,0,0))
@@ -227,7 +236,8 @@ def update(frame):	#animation frames update
 		ax2.plot(frame*dt,math.sqrt(simulation_data[frame][i][2]**2+simulation_data[frame][i][3]**2), c=colors[i],marker='*', markersize=2)
 
 
-
-animation = FuncAnimation(fig, update, interval=1, frames=int(len(simulation_data)/animation_speed), repeat=False)
+try:
+	animation = FuncAnimation(fig, update, interval=50, frames=int(len(simulation_data)/animation_speed), repeat=False)
+except Exception as e: print(e)
 plt.show()
 
