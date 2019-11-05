@@ -236,8 +236,7 @@ def update(frame):	#animation frames update
 		ax2.plot(frame*dt,math.sqrt(simulation_data[frame][i][2]**2+simulation_data[frame][i][3]**2), c=colors[i],marker='*', markersize=2)
 
 
-try:
-	animation = FuncAnimation(fig, update, interval=50, frames=int(len(simulation_data)/animation_speed), repeat=False)
-except Exception as e: print(e)
+
+animation = FuncAnimation(fig, update, interval=50, frames=int(len(simulation_data)/animation_speed), repeat=False)
 plt.show()
 
