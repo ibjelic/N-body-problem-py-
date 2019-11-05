@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.animation import FuncAnimation
-import math, time, matplotlib, random
+import random, math, time, matplotlib
+from random import seed, randrange
 
 matplotlib.use('Qt5Agg')
 #Some important variables
@@ -196,16 +197,26 @@ def simulation(bodies, t, box):
 
 #create box:
 box = box(-100,100,100,-100)
-
+seed(420)
+def avg_path_coordinates(bodies,avg,box):
+	
+	xcor,ycor = [],[]
+	gsp = (int(math.sqrt(bodies)))+1
+	for i in range(gsp):
+		for j in range(gsp):
+			xcor.append(i*random.uniform(avg-avg*0.1,avg+avg*0.1))
+			ycor.append(j*random.uniform(avg-avg*0.1,avg+avg*0.1))
+	return xcor,ycor
 #generate random coordinates
 test = []
 
-number_of_bodies = 20
+number_of_bodies = 10
+avg_path=20
 
-xcor, ycor = random.sample(range(box.left+5,box.right-5), number_of_bodies), random.sample(range(box.down+5,box.up-5), number_of_bodies)
-mass, charge = random.sample(range(100),number_of_bodies), random.sample(range(-100,100), number_of_bodies)
+xcor, ycor = avg_path_coordinates(number_of_bodies,avg_path,box)
+mass, vx,vy = random.sample(range(100),number_of_bodies), random.sample(range(-100,100), number_of_bodies),random.sample(range(-100,100), number_of_bodies)
 for i in range(number_of_bodies):
-	test.append(body(xcor[i],ycor[i],mass[i],charge[i]*1e-4,1,0,0))
+	test.append(body(xcor[i],ycor[i],mass[i],0,1,vx[i],vy[i]))
 
 #test = [body(-10,10,1,1e-2,1,5,-5),body(10,-10,1,1e-2,1,-5,5)]
 
